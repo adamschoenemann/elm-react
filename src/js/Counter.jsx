@@ -15,10 +15,10 @@ var View = React.createClass({
 });
 
 function update(action, model) {
-	switch (action) {
-		case Actions.Decrement:
+	switch (action.match()) {
+		case Actions.Decrement.match():
 			return model - 1;
-		case Actions.Increment:
+		case Actions.Increment.match():
 			return model + 1;
 	}
 }

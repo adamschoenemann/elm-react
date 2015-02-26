@@ -2,10 +2,10 @@
 var Bacon = require('baconjs');
 var _ = require('lodash');
 
-function localChannel(wrapper, channel) {
+function localChannel(action, channel) {
 	var local = new Bacon.Bus();
 	local.onValue(val => {
-		channel.push([wrapper].concat(_.isArray(val) ? val : [val]));
+		channel.push(action(val));
 	});
 	return local;
 }

@@ -11,25 +11,44 @@ var livereload = require('gulp-livereload');
 
 function onChange(event) {
 	gutil.log('File ' + event.path + ' was ' + event.type + ', running tasks...');
-	livereload();
+	// livereload();
 }
 
 function onError(err) {
 	gutil.log(err);
 }
 
-gulp.task('browserify', function() {
-	browserifyShare();
+gulp.task('build', ['vendor', 'lib'], function(){
+
 });
+
+gulp.task('vendor', function () {
+	var bundler = browserify({
+		debug: true
+	});
+
+	bundler.require('react');
+
+	bundle(bundler, 'vendor.js');
+});
+
+gulp.task('lib', function() {
+	var bundler = newBundle();
+	bundler.external('react');
+	bundler.add('./src/js/main.jsx');
+	return bundle(bundler, 'lib.js');
+});
+
+
 
 gulp.task('watch', [], function(){
-	gulp.watch('./src/js/**/*.js*', ['browserify']).on('change', onChange);
 	livereload.listen();
+	return gulp.watch('./src/js/**/*.js*', ['lib']).on('change', onChange);
 
 });
 
 
-function bundleShare(bundler) {
+function bundle(bundler, name) {
 	gutil.log('Compiling...');
 	return bundler.bundle()
 			.on('error', function(err) {
@@ -38,19 +57,21 @@ function bundleShare(bundler) {
 			.on('finish', function() {
 				gutil.log('finished');
 			})
-			.pipe(source('bundle.js'))
+			.pipe(source(name))
 			.pipe(gulp.dest('./dist/js'))
 			.pipe(livereload());
 }
 
-function browserifyShare() {
+function newBundle() {
 	var bundler = browserify({
 		debug: true,
 		paths: ['./node_modules', './src/js/']
 	});
-	// bundler.transform(reactify, {harmony: true});
 	bundler.transform(babelify);
-	bundler.add('./src/js/main.jsx');
-	bundleShare(bundler);
+	// bundler.transform(reactify, {harmony: true});
+	// bundler.transform(es6ify.configure(/.+\.(js|jsx)/));
+	bundler.add(es6ify.runtime);
+
+	return bundler;
 }
 

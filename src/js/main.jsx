@@ -6,29 +6,48 @@ var LC = require('local-channel');
 var Elm = require('react-elm');
 var Immutable = require('immutable');
 
-var Actions = Elm.createActions(['First', 'Second']);
+var Actions = Elm.createActions(['Insert', 'Remove', 'Modify']);
 
 var App = React.createClass({
 	clickChannel: new Bacon.Bus(),
 	getInitialState() {
-		return Immutable.Map({first: Counter.Model, second: Counter.Model});
+		return {
+			counters: Immutable.List([0,1,2])
+		};
 	},
 	componentWillMount() {
-		this.clickChannel.onValue(actions => {
-			var [action, next] = actions;
-			switch (action) {
-				case Actions.First:
-					return this.replaceState(this.state.set('first', Counter.update(next, this.state.get('first'))));
-				case Actions.Second:
-					return this.replaceState(this.state.set('second', Counter.update(next, this.state.get('second'))));
+		this.clickChannel.onValue((action => {
+			switch (action.match()) {
+				case Actions.Modify.match():
+					var [index, next] = action.getArgs();
+					return this.replaceState({
+						counters: this.state.counters.set(
+							index,
+							Counter.update(next, this.state.counters.get(index))
+						)
+					});
+				case Actions.Insert.match():
+					return this.replaceState({
+						counters: this.state.counters.push(Counter.Model)
+					});
+				case Actions.Remove.match():
+					return this.replaceState({
+						counters: this.state.counters.pop()
+					});
 			}
-		}.bind(this));
+		}).bind(this));
 	},
 	render () {
+		var counters = this.state.counters.toArray().map((c, i) => {
+			return <Counter.View
+						model={c}
+						actionChannel={LC.create(Actions.Modify(i), this.clickChannel)} />;
+		}, this);
 		return (
 			<div>
-				<Counter.View model={this.state.get('first')} actionChannel={LC.create(Actions.First, this.clickChannel)} />
-				<Counter.View model={this.state.get('second')} actionChannel={LC.create(Actions.Second, this.clickChannel)} />
+				{counters}
+				<button onClick={() => LC.create(Actions.Insert, this.clickChannel).push()}>Insert</button>
+				<button onClick={() => LC.create(Actions.Remove, this.clickChannel).push()}>Remove</button>
 			</div>
 		);
 	}
